@@ -28,19 +28,24 @@ QUEUE_MAX = 10_000
 
 class RequestLogWriter:
     def __init__(self) -> None:
-        self._queue: asyncio.Queue[dict[str, Any]] = asyncio.Queue(maxsize=QUEUE_MAX)
+        # The queue is created in start(), not here: an asyncio.Queue binds to
+        # the running loop the first time it is used, and this object outlives
+        # any single loop (reloads, tests, an app embedded in another runner).
+        self._queue: asyncio.Queue[dict[str, Any]] | None = None
         self._task: asyncio.Task[None] | None = None
         self.dropped = 0
         self.written = 0
 
     # -- lifecycle ---------------------------------------------------------
     async def start(self) -> None:
-        if self._task is None:
-            self._task = asyncio.create_task(self._run(), name="request-log-writer")
+        if self._task is not None:
+            return
+        self._queue = asyncio.Queue(maxsize=QUEUE_MAX)
+        self._task = asyncio.create_task(self._run(), name="request-log-writer")
 
     async def stop(self) -> None:
         """Drain what is queued before the process goes away."""
-        if self._task is None:
+        if self._task is None or self._queue is None:
             return
         await self._queue.join()
         self._task.cancel()
@@ -49,10 +54,14 @@ class RequestLogWriter:
         except asyncio.CancelledError:
             pass
         self._task = None
+        self._queue = None
 
     # -- producer ----------------------------------------------------------
     def submit(self, entry: dict[str, Any]) -> None:
         """Never blocks and never raises: called from the request path."""
+        if self._queue is None:  # writer not running (e.g. during shutdown)
+            self.dropped += 1
+            return
         try:
             self._queue.put_nowait(entry)
         except asyncio.QueueFull:
@@ -62,6 +71,7 @@ class RequestLogWriter:
 
     # -- consumer ----------------------------------------------------------
     async def _run(self) -> None:
+        assert self._queue is not None
         while True:
             batch = [await self._queue.get()]
             # Take whatever else is already waiting, up to the batch size.
@@ -102,7 +112,8 @@ class RequestLogWriter:
     # -- test support ------------------------------------------------------
     async def flush(self) -> None:
         """Wait until everything queued has been written."""
-        await self._queue.join()
+        if self._queue is not None:
+            await self._queue.join()
 
 
 writer = RequestLogWriter()
