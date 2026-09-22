@@ -37,7 +37,9 @@ class RequestLog(Base):
     method: Mapped[str] = mapped_column(String(8))
     path: Mapped[str] = mapped_column(String(255))
     status_code: Mapped[int] = mapped_column(Integer)
-    response_time_ms: Mapped[int] = mapped_column(Integer)
+    # Microseconds, not milliseconds: a fast endpoint answers in well under a
+    # millisecond, and rounding those to 0 would make the averages useless.
+    response_time_us: Mapped[int] = mapped_column(Integer)
     client_ip: Mapped[Optional[str]] = mapped_column(String(45), default=None)
     # Set when the request was refused before the endpoint ran.
     error_code: Mapped[Optional[str]] = mapped_column(String(48), default=None)

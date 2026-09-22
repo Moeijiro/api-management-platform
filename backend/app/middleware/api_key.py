@@ -149,7 +149,7 @@ class APIKeyMiddleware(BaseHTTPMiddleware):
                 "method": request.method,
                 "path": request.url.path[:255],
                 "status_code": status_code,
-                "response_time_ms": int((time.perf_counter() - started) * 1000),
+                "response_time_us": int((time.perf_counter() - started) * 1_000_000),
                 "client_ip": _client_ip(request) if settings.log_client_ip else None,
                 "error_code": error_code,
             }

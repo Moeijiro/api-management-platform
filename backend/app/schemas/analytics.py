@@ -15,7 +15,7 @@ class EndpointUsage(BaseModel):
     path: str
     method: str
     requests: int
-    avg_response_time_ms: int
+    avg_response_time_ms: float
 
 
 class UsageOverview(BaseModel):
@@ -25,7 +25,7 @@ class UsageOverview(BaseModel):
     requests_this_month: int
     requests_total: int
     success_rate: float | None
-    avg_response_time_ms: int | None
+    avg_response_time_ms: float | None
     active_keys: int
     total_keys: int
     rate_limited_today: int

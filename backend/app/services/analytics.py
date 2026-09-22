@@ -50,8 +50,8 @@ def overview(db: Session, user_id: int) -> dict[str, Any]:
 
     total = count()
     successes = count(RequestLog.status_code < 400)
-    avg_ms = db.execute(
-        select(func.avg(RequestLog.response_time_ms)).where(RequestLog.user_id == user_id)
+    avg_us = db.execute(
+        select(func.avg(RequestLog.response_time_us)).where(RequestLog.user_id == user_id)
     ).scalar_one()
 
     bucket = _hour_bucket(db)
@@ -80,7 +80,7 @@ def overview(db: Session, user_id: int) -> dict[str, Any]:
             RequestLog.path,
             RequestLog.method,
             func.count().label("requests"),
-            func.avg(RequestLog.response_time_ms).label("avg_ms"),
+            func.avg(RequestLog.response_time_us).label("avg_us"),
         )
         .where(RequestLog.user_id == user_id)
         .group_by(RequestLog.path, RequestLog.method)
@@ -102,7 +102,7 @@ def overview(db: Session, user_id: int) -> dict[str, Any]:
         "requests_this_month": count(RequestLog.created_at >= start_of_month),
         "requests_total": total,
         "success_rate": round(successes / total * 100, 1) if total else None,
-        "avg_response_time_ms": int(avg_ms) if avg_ms is not None else None,
+        "avg_response_time_ms": round(avg_us / 1000, 2) if avg_us is not None else None,
         "active_keys": keys_active,
         "total_keys": keys_total,
         "rate_limited_today": count(
@@ -114,7 +114,7 @@ def overview(db: Session, user_id: int) -> dict[str, Any]:
                 "path": row.path,
                 "method": row.method,
                 "requests": row.requests,
-                "avg_response_time_ms": int(row.avg_ms or 0),
+                "avg_response_time_ms": round((row.avg_us or 0) / 1000, 2),
             }
             for row in top
         ],

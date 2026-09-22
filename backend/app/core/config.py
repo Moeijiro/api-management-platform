@@ -23,7 +23,11 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./api_platform.db"
 
     # --- Security --------------------------------------------------------
-    secret_key: str = Field(default="dev-only-insecure-secret", min_length=8)
+    # Long enough that PyJWT does not warn in development; the production
+    # guard below still rejects it because of the "insecure" marker.
+    secret_key: str = Field(
+        default="dev-only-insecure-secret-replace-before-deploying", min_length=8
+    )
     access_token_ttl_minutes: int = Field(default=720, ge=5)
     cookie_secure: bool = False
     cookie_samesite: Literal["lax", "strict", "none"] = "lax"
