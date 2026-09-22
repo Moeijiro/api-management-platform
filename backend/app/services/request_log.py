@@ -15,11 +15,11 @@ import asyncio
 import logging
 from typing import Any
 
-from sqlalchemy import insert
+from sqlalchemy import func, insert, update
 
 from app.core.config import settings
 from app.db.session import SessionLocal
-from app.models import RequestLog
+from app.models import APIKey, RequestLog
 
 logger = logging.getLogger("api.logs")
 
@@ -88,6 +88,15 @@ class RequestLogWriter:
     def _write(rows: list[dict[str, Any]]) -> None:
         with SessionLocal() as db:
             db.execute(insert(RequestLog), rows)
+            # last_used_at is refreshed from the same batch, so a busy key
+            # costs one UPDATE per flush instead of one per request.
+            touched = {row["api_key_id"] for row in rows if row.get("api_key_id")}
+            if touched:
+                db.execute(
+                    update(APIKey)
+                    .where(APIKey.id.in_(touched))
+                    .values(last_used_at=func.now())
+                )
             db.commit()
 
     # -- test support ------------------------------------------------------
