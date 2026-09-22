@@ -45,33 +45,33 @@ export function Logs() {
       <PageHeader
         title="Request logs"
         description="Every call to /v1, including the ones that were refused."
-        actions={
-          <div className="flex flex-wrap gap-2">
-            <Select aria-label="Filter by status" className="w-32" value={statusClass} onChange={filter(setStatusClass)}>
-              <option value="">Any status</option>
-              <option value="2xx">2xx</option>
-              <option value="4xx">4xx</option>
-              <option value="5xx">5xx</option>
-            </Select>
-            <Select aria-label="Filter by method" className="w-32" value={method} onChange={filter(setMethod)}>
-              <option value="">Any method</option>
-              {["GET", "POST", "PUT", "PATCH", "DELETE"].map((verb) => (
-                <option key={verb} value={verb}>
-                  {verb}
-                </option>
-              ))}
-            </Select>
-            <Select aria-label="Filter by API key" className="w-40" value={keyId} onChange={filter(setKeyId)}>
-              <option value="">All keys</option>
-              {keys.data?.map((key) => (
-                <option key={key.id} value={key.id}>
-                  {key.name}
-                </option>
-              ))}
-            </Select>
-          </div>
-        }
       />
+
+      {/* Filters live on their own row: three selects crowd a page header. */}
+      <div className="mb-4 flex flex-wrap gap-2">
+        <Select aria-label="Filter by status" className="w-32" value={statusClass} onChange={filter(setStatusClass)}>
+          <option value="">Any status</option>
+          <option value="2xx">2xx</option>
+          <option value="4xx">4xx</option>
+          <option value="5xx">5xx</option>
+        </Select>
+        <Select aria-label="Filter by method" className="w-32" value={method} onChange={filter(setMethod)}>
+          <option value="">Any method</option>
+          {["GET", "POST", "PUT", "PATCH", "DELETE"].map((verb) => (
+            <option key={verb} value={verb}>
+              {verb}
+            </option>
+          ))}
+        </Select>
+        <Select aria-label="Filter by API key" className="w-44" value={keyId} onChange={filter(setKeyId)}>
+          <option value="">All keys</option>
+          {keys.data?.map((key) => (
+            <option key={key.id} value={key.id}>
+              {key.name}
+            </option>
+          ))}
+        </Select>
+      </div>
 
       {page.error ? <ErrorNote message={page.error} /> : null}
 
