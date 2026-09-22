@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_serializer
+
+from app.schemas.common import utc_iso
 
 
 class APIKeyCreate(BaseModel):
@@ -25,6 +27,10 @@ class APIKeyOut(BaseModel):
     created_at: datetime
     last_used_at: datetime | None
     revoked_at: datetime | None
+
+    @field_serializer("created_at", "last_used_at", "revoked_at")
+    def _as_utc(self, value: datetime | None) -> str | None:
+        return utc_iso(value)
 
     @property
     def status(self) -> str:  # pragma: no cover - convenience for templates

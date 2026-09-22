@@ -3,7 +3,9 @@ from __future__ import annotations
 import re
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator
+
+from app.schemas.common import utc_iso
 
 # Enough to catch typos; uniqueness and a working password are the real checks.
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s.]+\.[^@\s]{2,}$")
@@ -37,3 +39,7 @@ class UserOut(BaseModel):
     id: int
     email: str
     created_at: datetime
+
+    @field_serializer("created_at")
+    def _as_utc(self, value: datetime) -> str | None:
+        return utc_iso(value)

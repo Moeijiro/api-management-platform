@@ -1,8 +1,10 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, computed_field, field_serializer
+
+from app.schemas.common import utc_iso
 
 
 class RequestLogOut(BaseModel):
@@ -25,11 +27,8 @@ class RequestLogOut(BaseModel):
         return round(self.response_time_us / 1000, 2)
 
     @field_serializer("created_at")
-    def _as_utc(self, value: datetime) -> str:
-        """SQLite returns naive datetimes; they are UTC, so say so."""
-        if value.tzinfo is None:
-            value = value.replace(tzinfo=timezone.utc)
-        return value.isoformat()
+    def _as_utc(self, value: datetime) -> str | None:
+        return utc_iso(value)
 
 
 class RequestLogPage(BaseModel):

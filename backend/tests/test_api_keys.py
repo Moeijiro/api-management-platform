@@ -106,3 +106,14 @@ def test_the_active_key_limit_is_enforced(auth_client: TestClient) -> None:
     eleventh = auth_client.post("/api/keys", json={"name": "Too many"})
     assert eleventh.status_code == 409
     assert eleventh.json()["error"]["code"] == "key_limit_reached"
+
+
+def test_timestamps_are_serialised_as_utc(auth_client: TestClient, api_key: str, flush_logs) -> None:
+    """Without an explicit zone the browser reads these as local time."""
+    auth_client.get("/v1/status", headers={"X-API-Key": api_key})
+    flush_logs()
+
+    key = auth_client.get("/api/keys").json()[0]
+    assert key["created_at"].endswith("+00:00")
+    assert key["last_used_at"].endswith("+00:00")
+    assert auth_client.get("/auth/me").json()["created_at"].endswith("+00:00")
