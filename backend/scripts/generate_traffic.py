@@ -52,6 +52,12 @@ def main() -> int:
     parser.add_argument("--password", default="demo-password-1234")
     parser.add_argument("--requests", type=int, default=120)
     parser.add_argument("--key-name", default="Demo traffic")
+    parser.add_argument(
+        "--burst",
+        type=int,
+        default=8,
+        help="Extra calls through a 3/min key, to produce genuine 429s.",
+    )
     args = parser.parse_args()
 
     client = Client(args.base)
@@ -64,7 +70,13 @@ def main() -> int:
     if status == 409:
         client.call("/auth/login", {"email": args.email, "password": args.password})
 
-    status, created = client.call("/api/keys", {"name": args.key_name})
+    # The key's own quota is raised above the run size: the point of this
+    # script is a populated dashboard, not a wall of 429s. Rate limiting gets
+    # its own small key below.
+    status, created = client.call(
+        "/api/keys",
+        {"name": args.key_name, "rate_limit_per_minute": max(args.requests * 2, 120)},
+    )
     if status != 201 or not created:
         print(f"Could not create an API key ({status}).")
         return 1
@@ -93,7 +105,17 @@ def main() -> int:
             code, _ = client.call("/v1/random?minimum=10&maximum=1", headers=headers)
         counts[code] = counts.get(code, 0) + 1
 
-    print(f"Sent {args.requests} requests with key {created['prefix']}…")
+    if args.burst:
+        status, throttled = client.call(
+            "/api/keys", {"name": "Burst test", "rate_limit_per_minute": 3}
+        )
+        if status == 201 and throttled:
+            burst_headers = {"X-API-Key": throttled["key"]}
+            for _ in range(args.burst):
+                code, _ = client.call("/v1/status", headers=burst_headers)
+                counts[code] = counts.get(code, 0) + 1
+
+    print(f"Sent {args.requests + args.burst} requests with key {created['prefix']}…")
     for code in sorted(counts):
         print(f"  {code}: {counts[code]}")
     print("\nThe raw key is shown once by the API; this run used:")
