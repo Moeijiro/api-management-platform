@@ -1,5 +1,7 @@
 # API Management Platform
 
+**Portfolio case study:** [moeijiro.github.io/portfolio/projects/api-management-platform](https://moeijiro.github.io/portfolio/projects/api-management-platform/) · **Live demo:** not hosted — the app runs locally in a few commands (see below).
+
 A small developer console for an API product: register, issue API keys, call a protected
 API with them, and see every request that was made — with its status, latency and the
 reason it was refused.
