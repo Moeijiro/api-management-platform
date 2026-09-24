@@ -383,6 +383,20 @@ Makefile            install / api / web / test / traffic / purge-logs
 
 ---
 
+## Deployment
+
+There is no hosted instance; the project is set up to deploy as separate processes:
+
+- **API:** `uvicorn app.main:app --host 0.0.0.0 --port 8000` with `ENVIRONMENT=production`. The app refuses to start in production if `SECRET_KEY` is weak or `COOKIE_SECURE` is false.
+- **Web:** `cd frontend && npm ci && npm run build` produces a static `dist/`. Serve it from the same origin as the API (proxy `/api` to it), or set `VITE_API_BASE_URL`.
+- **One API instance:** the rate limiter keeps its windows in memory; running several workers needs a shared store (the limiter is one small class in `app/core/rate_limit.py`).
+- **Database:** `DATABASE_URL` takes any SQLAlchemy URL. The project is developed and tested on SQLite.
+- **Cookies:** serve the web app and the API from the same site (for example `app.example.com` and `api.example.com`) so the SameSite session cookie is sent, and set `COOKIE_SECURE=true` behind HTTPS.
+
+## Project status
+
+Complete portfolio project. CI runs the backend tests and the console build on every push. There is no hosted instance.
+
 ## Licence
 
 MIT — see [LICENSE](LICENSE).
